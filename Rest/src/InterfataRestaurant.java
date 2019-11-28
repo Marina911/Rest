@@ -2,6 +2,7 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -79,6 +80,7 @@ public class InterfataRestaurant {
 	private JTextField txtDate;
 	private JTextField txtOra;
 	private JTextField txtCodComanda;
+	TextArea vizBon = new TextArea();
 
 	/**
 	 * Launch the application.
@@ -105,6 +107,7 @@ public class InterfataRestaurant {
 	
 	JComboBox comboBoxNrMasa = new JComboBox();
 	JComboBox comboBoxFelMancare = new JComboBox();
+	JComboBox comboBoxNrMasaBon = new JComboBox();
 	private JTextField txtNrPortiiOspatar;
 	private JTextField txtCodBuc;
 	private JTextField txtCodBarman;
@@ -137,6 +140,7 @@ public class InterfataRestaurant {
 
 				if(comboBoxNrMasa.getItemCount() != 4 ) {
 					comboBoxNrMasa.addItem(rs.getString("nrmasa"));
+				//	comboBoxNrMasaBon.addItem(rs.getString("nrMasa"));
 					System.out.println(rs.getString("nrmasa"));
 				}
 				
@@ -148,7 +152,91 @@ public class InterfataRestaurant {
 		}
 	};
 	
+	public void comboBoxMeseB() {
+		try {
+			Connection connection = ConexiuneBD.getConnection();
+			String query = "SELECT nrmasa FROM masa";
+			PreparedStatement pst = connection.prepareStatement(query);
+			ResultSet rs = pst.executeQuery();
+
+			while(rs.next()) {
+
+				if(comboBoxNrMasaBon.getItemCount() != 4 ) {
+					comboBoxNrMasaBon.addItem(rs.getString("nrmasa"));
+					System.out.println(rs.getString("nrmasa"));
+				}
+				
+			}
+	
+			connection.close();
+		}catch(Exception exception) {
+			System.out.println(exception);
+		}
+	};
+	
+	public void bon() {
+		try {
+			Connection connection = ConexiuneBD.getConnection();
+			String query = "SELECT nume_fel_meniu, den_fel, pret" + 
+					" FROM fel f, meniu m" + 
+					" WHERE f.codm = m.codm " + 
+					" AND den_fel IN (SELECT felComandat" + 
+					" FROM comanda" + 
+					" WHERE stareComanda = 'Terminata'" + 
+					" AND stareComandaOspatar = 'Servita'" + 
+					" AND nrmasa = ?)";
+			PreparedStatement pst = connection.prepareStatement(query);
+			String nr = (String) comboBoxNrMasaBon.getSelectedItem();
+			pst.setString(1, nr);
+			ResultSet rs = pst.executeQuery();
+			
+			int refs = 1325 + (int) (Math.random()*4238);
+			
+			Calendar time = Calendar.getInstance();
+			time.getTime();
+			SimpleDateFormat tTime = new SimpleDateFormat("HH:mm:ss");
+			tTime.format(time.getTime());
+			SimpleDateFormat tDate = new SimpleDateFormat("dd-MM-yyyy");
+			tDate.format(time.getTime());
+			
+			vizBon.append("\tSistem Gestiune Restaurat - PIE - GRUPA1_CEA_MAI_TARE:\n\n"+
+						"Reference:\t\t\t   "+refs+
+						"\nData si ora:        "+tDate.format(time.getTime())+", "+tTime.format(time.getTime())+"\n"+
+						"Ospatar:     "+txtNumeAngajat.getText()+"\n"+
+						"Numar masa:       "+nr+
+						"\n__________________________________________________________\n"
+						);
+			int total = 0;
+			while(rs.next()) {
+				String nume_fel_meniu = rs.getString("nume_fel_meniu");
+				String den_fel = rs.getString("den_fel");
+				String pret = rs.getString("pret");
+				
+				int pretInt = Integer.parseInt(pret);
+				if(pretInt != 0) {
+					total += pretInt;
+				}
+				
+		     	vizBon.append("\nCategorie fel:"+nume_fel_meniu+",    |     Fel: "+den_fel+",   |    Pret: " +pret+"\n");
+			}
+			
+			vizBon.append("\n_____________________________________________________________\n");
+			vizBon.append("Total de plata:                  |                     "+total+"\n");
+			vizBon.append("\n_____________________________________________________________\n");
+			vizBon.append("\t\t~Multumim, va mai asteptam!~\n");
+	
+			connection.close();
+		}catch(Exception exception) {
+			System.out.println(exception);
+		}
+		
+		
+	};
+	
 	JComboBox comboBox_1 = new JComboBox();
+	private JTextField textField_2;
+	private JTextField textField_3;
+	private JTextField textField_4;
 	
 	public void comboBoxComenziAcasa() {
 		try {
@@ -571,6 +659,7 @@ public class InterfataRestaurant {
 		meniuOspatar.setLayout(null);
 		comboBoxFelMancare();
 		comboBoxMese();
+		comboBoxMeseB();
 		comboBoxComenziAcasa();
 		
 		
@@ -800,7 +889,12 @@ public class InterfataRestaurant {
 						meniuManager.setVisible(true);
 						inregistrare.setVisible(false);
 						
-					}else{
+					}else if(profesie.equals("alimentareStoc")) {
+						
+						stoc.setVisible(true);
+						inregistrare.setVisible(false);
+					}	
+					else{
 						
 						JOptionPane.showMessageDialog( null, "Cont invalid!");
 					}
@@ -1133,6 +1227,9 @@ public class InterfataRestaurant {
 			}
 		});
 		
+		JPanel meniuBon = new JPanel();
+		meniuBon.setLayout(null);
+		frame.getContentPane().add(meniuBon, "name_641282799312500");
 	
 		comboBoxNrMasa.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		comboBoxNrMasa.setBounds(102, 201, 118, 26);
@@ -1194,6 +1291,18 @@ public class InterfataRestaurant {
 		btnValidareOspatar.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		btnValidareOspatar.setBounds(368, 421, 103, 40);
 		meniuOspatar.add(btnValidareOspatar);
+		
+		JButton btnBon = new JButton("Bon");
+		btnBon.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				meniuOspatar.setVisible(false);
+				meniuBon.setVisible(true);	
+			}
+		});
+		
+		btnBon.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		btnBon.setBounds(724, 421, 103, 40);
+		meniuOspatar.add(btnBon);
 		
 		
 
@@ -1329,13 +1438,143 @@ public class InterfataRestaurant {
 			public void actionPerformed(ActionEvent arg0) {
 				try {
 					Connection connection = ConexiuneBD.getConnection();
+					Statement stmt = connection.createStatement();
+					Statement stmt2 = connection.createStatement();
+					Statement stmt3 = connection.createStatement();
 					String query = "UPDATE comanda SET stareComanda = 'Terminata' WHERE codc = ?";
+					String query2 = "SELECT den_prod_stoc, cant FROM stoc";
+					String query3 = "SELECT den_fel, morcov, cartofi, lamai, fasole, malai, carnePui, oua, paine" + 
+									" FROM retete r, fel f" + 
+									" WHERE r.codFel = f.codf";
+					String query4 = "SELECT felComandat, numarPortii FROM comanda";					
+							
+					ResultSet rs = stmt.executeQuery(query2);
+					ResultSet rs2 = stmt2.executeQuery(query3);
+					ResultSet rs3 = stmt3.executeQuery(query4);
 					PreparedStatement pst = connection.prepareStatement(query);
-					
+					PreparedStatement pst2 = connection.prepareStatement(query2);
+					PreparedStatement pst3 = connection.prepareStatement(query3);
+					PreparedStatement pst4 = connection.prepareStatement(query4);
 					pst.setString(1, txtCodBuc.getText());
 					
-					pst.execute();
+					int stocMorcov = 0;
+					int stocPieptPui = 0;
+					int stocCartofi = 0;
+					int stocLamai = 0;
+					int stocMenta = 0;
+					int stocFasole = 0;
+					int stocMalai = 0;
+					int stocCarnePui = 0;
+					int stocCarnePorc = 0;
+					int stocOua = 0;
+					int stocPaine = 0;
 					
+					while(rs.next()) {
+						if(rs.getString("den_prod_stoc").equals("morcov")) {
+							stocMorcov = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("piept de pui")) {
+							stocPieptPui = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("cartofi")) {
+							stocCartofi = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("lamai")) {
+							stocLamai = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("menta")) {
+							stocMenta = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("fasole")) {
+							stocFasole = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("malai")) {
+							stocMalai = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("carne pui")) {
+							stocCarnePui = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("carne porc")) {
+							stocCarnePorc = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("oua")) {
+							stocOua = Integer.parseInt(rs.getString("cant"));
+						}else if(rs.getString("den_prod_stoc").equals("paine")) {
+							stocPaine = Integer.parseInt(rs.getString("cant"));
+						}
+					}
+					
+					Statement stmtUpdateCapOua = connection.createStatement();
+					Statement stmtUpdateCapPui = connection.createStatement();
+					String queryUpdateFinalStocCapr = "UPDATE stoc SET cant = ? WHERE den_prod_stoc = 'oua' ";
+					String queryCapriciosaPui = "UPDATE stoc SET cant = ? WHERE den_prod_stoc =  'carne pui'";
+					
+					PreparedStatement pstUpdateFinal = connection.prepareStatement(queryUpdateFinalStocCapr);
+					PreparedStatement pstUpdateCaprPui = connection.prepareStatement(queryCapriciosaPui);
+					
+					
+					
+					
+					int alimenteRamaseCapriciosaPui = 0;
+					int alimenteRamaseCapriciosaOua = 0;
+					int alimenteRamaseOmleta = 0;
+					int alimenteRameseCartofiPai = 0;
+					int portii = 0;
+					
+					while(rs3.next()) {
+						if(rs3.getString("felComandat").equals("Capriciosa")) {
+							portii = Integer.parseInt(rs3.getString("numarPortii"));
+						
+							System.out.print("\nportii::::: "+portii);
+							
+						}
+					}
+					
+					while(rs2.next()) {
+						if(rs2.getString("den_fel").equals("Capriciosa")) {
+							int cantCarnePuiCapriciosa = Integer.parseInt(rs2.getString("carnePui")) * portii;
+							int cantitateOuaCapriciosa = Integer.parseInt(rs2.getString("oua")) * portii;
+							 
+
+							System.out.print("\nstocCarnePui "+stocCarnePui);
+							System.out.print("\nalimenteRamaseCapriciosaPui "+stocCarnePui);
+							System.out.print("\ncantitateOuaCapriciosa "+ cantitateOuaCapriciosa);
+							
+							if(stocCarnePui > cantCarnePuiCapriciosa && stocOua > cantitateOuaCapriciosa) {
+								alimenteRamaseCapriciosaPui = stocCarnePui - cantCarnePuiCapriciosa;
+								pstUpdateCaprPui.setString(1, String.valueOf(cantCarnePuiCapriciosa));
+								System.out.print("\nalimenteRamaseCapriciosaPui "+alimenteRamaseCapriciosaPui);
+								alimenteRamaseCapriciosaOua = stocOua - cantitateOuaCapriciosa;
+								pstUpdateFinal.setString(1, String.valueOf(alimenteRamaseCapriciosaOua));
+								System.out.print("\nalimenteRamaseCapriciosaOua "+alimenteRamaseCapriciosaOua);
+								pst.execute();
+								pstUpdateFinal.execute();
+								pstUpdateCaprPui.execute();
+								
+								
+							}else{
+								JOptionPane.showMessageDialog(null, "Nu mai sunt produse in stoc pentru acest fel de mancare!->Capr");
+							}
+							
+						}else if(rs2.getString("den_fel").equals("Omleta")) {
+							int cantAlimenteOmleta = Integer.parseInt(rs2.getString("oua")) * portii;
+							//alimenteRamaseOmleta = stocOua - cantAlimenteOmleta;	
+							if(stocOua > cantAlimenteOmleta) {
+								alimenteRamaseOmleta = stocOua - cantAlimenteOmleta;
+								System.out.print("\nalimenteRamaseCapriciosaOua "+alimenteRamaseCapriciosaOua);
+								pst.execute();
+							}else{
+								JOptionPane.showMessageDialog(null, "Nu mai sunt produse in stoc pentru acest fel de mancare!->omleta");
+							}
+						}else if(rs2.getString("den_fel").equals("Friptura pui si cartofi pai")) {
+							int cantitateCartofi = Integer.parseInt(rs2.getString("cartofi")) * portii;
+							//int cantitateCarneP = Integer.parseInt(rs2.getString("carnePui")) * portii;
+							//alimenteRameseCartofiPai = stocCartofi - cantitateCartofi;
+							if(stocCartofi > cantitateCartofi) {
+								alimenteRameseCartofiPai = stocCartofi - cantitateCartofi;
+								System.out.print("\nalimenteRamaseCapriciosaOua "+alimenteRamaseCapriciosaOua);
+								pst.execute();
+							}else{
+								JOptionPane.showMessageDialog(null, "Nu mai sunt produse in stoc pentru acest fel de mancare!->cartofi");
+							}
+						}
+					}
+					
+				//	pst.execute();
+					pst2.execute();
+					pst3.execute();
+					pst4.execute();
 					connection.close();
 				}catch(Exception exception) {
 					System.out.println(exception);
@@ -1344,6 +1583,8 @@ public class InterfataRestaurant {
 				refreshTableBucatar();
 			}
 		});
+		
+		
 		btnValidareBucatar.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		
 		JLabel lblTabelaComenziIn = new JLabel("Tabela Comenzi in asteptare");
@@ -2083,7 +2324,7 @@ public class InterfataRestaurant {
 			panel_2.add(btnVeziToateProdusele);
 			btnVeziToateProdusele.setFont(new Font("Tahoma", Font.PLAIN, 20));
 			
-			JLabel lblStoc = new JLabel("Stoc");
+			JLabel lblStoc = new JLabel("Stoc - Aprovizionare");
 			lblStoc.setHorizontalAlignment(SwingConstants.CENTER);
 			lblStoc.setFont(new Font("Tahoma", Font.PLAIN, 30));
 			lblStoc.setBounds(0, 73, 1067, 37);
@@ -2154,7 +2395,7 @@ public class InterfataRestaurant {
 				}
 			});
 			btnVeziGrafic.setFont(new Font("Tahoma", Font.PLAIN, 20));
-			btnVeziGrafic.setBounds(602, 401, 158, 40);
+			btnVeziGrafic.setBounds(618, 401, 176, 40);
 			stoc.add(btnVeziGrafic);
 			
 			JButton btnPdfRaport = new JButton("PDF Raport");
@@ -2264,7 +2505,7 @@ public class InterfataRestaurant {
 				}
 			});
 			btnPdfRaport.setFont(new Font("Tahoma", Font.PLAIN, 20));
-			btnPdfRaport.setBounds(772, 401, 158, 40);
+			btnPdfRaport.setBounds(830, 401, 198, 40);
 			stoc.add(btnPdfRaport);
 			
 			
@@ -2956,5 +3197,166 @@ public class InterfataRestaurant {
 			
 			tableRezervari = new JTable();
 			scrollPane_6.setViewportView(tableRezervari);
+			
+			
+			
+			JLabel lblMeniuBon = new JLabel("Meniu Bon");
+			lblMeniuBon.setHorizontalAlignment(SwingConstants.CENTER);
+			lblMeniuBon.setFont(new Font("Tahoma", Font.PLAIN, 30));
+			lblMeniuBon.setBounds(0, 26, 1028, 57);
+			meniuBon.add(lblMeniuBon);
+			
+			JMenuBar menuBar_7 = new JMenuBar();
+			menuBar_7.setBounds(0, 0, 1028, 26);
+			meniuBon.add(menuBar_7);
+			
+			JButton button_67 = new JButton("Inapoi");
+			button_67.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					meniuOspatar.setVisible(true);
+					meniuBon.setVisible(false);	
+					vizBon.setText("");
+				}
+			});
+			button_67.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_67.setBounds(16, 432, 103, 40);
+			meniuBon.add(button_67);
+			
+			JButton button_70 = new JButton("Exit");
+			button_70.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_70.setBounds(131, 432, 103, 40);
+			meniuBon.add(button_70);
+			
+			comboBoxNrMasaBon.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			comboBoxNrMasaBon.setBounds(106, 121, 142, 26);
+			meniuBon.add(comboBoxNrMasaBon);
+			
+			JLabel label_1 = new JLabel("Nr Masa:");
+			label_1.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			label_1.setBounds(16, 121, 147, 26);
+			meniuBon.add(label_1);
+			
+			JButton btnValideaza = new JButton("Valideaza");
+			btnValideaza.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					vizBon.setText("");
+					bon();
+
+				}
+			});
+			btnValideaza.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			btnValideaza.setBounds(258, 121, 156, 26);
+			meniuBon.add(btnValideaza);
+			
+			JScrollPane scrollPane_7 = new JScrollPane();
+			scrollPane_7.setBounds(16, 157, 442, 265);
+			meniuBon.add(scrollPane_7);
+			
+			
+			scrollPane_7.setViewportView(vizBon);
+			
+			JPanel meniuAprovizionare = new JPanel();
+			meniuAprovizionare.setLayout(null);
+			frame.getContentPane().add(meniuAprovizionare, "name_710072535440000");
+			
+			JMenuBar menuBar_8 = new JMenuBar();
+			menuBar_8.setBounds(0, 0, 1067, 26);
+			meniuAprovizionare.add(menuBar_8);
+			
+			JButton button_71 = new JButton("Insert");
+			button_71.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_71.setBounds(12, 401, 103, 40);
+			meniuAprovizionare.add(button_71);
+			
+			JButton button_72 = new JButton("Update");
+			button_72.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_72.setBounds(127, 401, 103, 40);
+			meniuAprovizionare.add(button_72);
+			
+			JButton button_73 = new JButton("Delete");
+			button_73.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_73.setBounds(240, 401, 103, 40);
+			meniuAprovizionare.add(button_73);
+			
+			JScrollPane scrollPane_8 = new JScrollPane();
+			scrollPane_8.setBounds(358, 121, 670, 267);
+			meniuAprovizionare.add(scrollPane_8);
+			
+			JPanel panel_6 = new JPanel();
+			panel_6.setLayout(null);
+			panel_6.setBorder(new LineBorder(new Color(0, 0, 0)));
+			panel_6.setBounds(12, 121, 331, 267);
+			meniuAprovizionare.add(panel_6);
+			
+			JLabel label_4 = new JLabel("Cantitate:");
+			label_4.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			label_4.setBounds(12, 64, 143, 27);
+			panel_6.add(label_4);
+			
+			JLabel label_5 = new JLabel("Data consumului:");
+			label_5.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			label_5.setBounds(12, 104, 156, 26);
+			panel_6.add(label_5);
+			
+			textField_2 = new JTextField();
+			textField_2.setColumns(10);
+			textField_2.setBounds(201, 67, 118, 27);
+			panel_6.add(textField_2);
+			
+			textField_3 = new JTextField();
+			textField_3.setColumns(10);
+			textField_3.setBounds(222, 107, 97, 26);
+			panel_6.add(textField_3);
+			
+			JButton button_74 = new JButton("Vezi doar produsele expirate");
+			button_74.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_74.setBounds(12, 150, 307, 26);
+			panel_6.add(button_74);
+			
+			JButton button_75 = new JButton("Vezi doar produsele epuizate");
+			button_75.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_75.setBounds(12, 189, 307, 26);
+			panel_6.add(button_75);
+			
+			JLabel label_8 = new JLabel("Nume produs:");
+			label_8.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			label_8.setBounds(12, 24, 143, 27);
+			panel_6.add(label_8);
+			
+			textField_4 = new JTextField();
+			textField_4.setColumns(10);
+			textField_4.setBounds(201, 27, 118, 27);
+			panel_6.add(textField_4);
+			
+			JButton button_76 = new JButton("Vezi toate produsele");
+			button_76.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_76.setBounds(12, 228, 307, 26);
+			panel_6.add(button_76);
+			
+			JLabel lblAprovizionare = new JLabel("Aprovizionare");
+			lblAprovizionare.setHorizontalAlignment(SwingConstants.CENTER);
+			lblAprovizionare.setFont(new Font("Tahoma", Font.PLAIN, 30));
+			lblAprovizionare.setBounds(0, 73, 1067, 37);
+			meniuAprovizionare.add(lblAprovizionare);
+			
+			JButton button_77 = new JButton("Inapoi");
+			button_77.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_77.setBounds(355, 401, 103, 40);
+			meniuAprovizionare.add(button_77);
+			
+			JButton button_78 = new JButton("Exit");
+			button_78.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_78.setBounds(477, 401, 103, 40);
+			meniuAprovizionare.add(button_78);
+			
+			JButton button_79 = new JButton("Vezi grafic");
+			button_79.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_79.setBounds(602, 401, 130, 40);
+			meniuAprovizionare.add(button_79);
+			
+			JButton button_80 = new JButton("PDF Raport");
+			button_80.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			button_80.setBounds(742, 401, 138, 40);
+			meniuAprovizionare.add(button_80);
 	}
 }
